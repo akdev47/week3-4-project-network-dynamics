@@ -58,6 +58,21 @@ def evenly_spaced_indices(n: int, k: int) -> List[int]:
     return [round(i * (n - 1) / (k - 1)) for i in range(k)]
 
 
+def clear_plots(prefix: str) -> None:
+    """
+    Delete old plot files in PLOTS_DIR whose filename starts with prefix.
+    Example prefixes: 's3a_', 's3d_'.
+    """
+    if not os.path.isdir(PLOTS_DIR):
+        return
+    for fname in os.listdir(PLOTS_DIR):
+        if fname.startswith(prefix) and fname.endswith(".png"):
+            try:
+                os.remove(os.path.join(PLOTS_DIR, fname))
+            except OSError:
+                pass
+
+
 # ---------------------------------------------------------------------
 # Helpers: YouTube data
 # ---------------------------------------------------------------------
@@ -196,6 +211,9 @@ def plot_viewcount_distributions(num_days: int = 5) -> None:
     """
     ensure_dir(PLOTS_DIR)
 
+    # clear old 3a plots so they don't multiply
+    clear_plots("s3a_")
+
     yt_days = list(iter_youtube_days(YOUTUBE_ZIP))
     if not yt_days:
         print("No YouTube data found. Check your YOUTUBE_ZIP path.")
@@ -206,6 +224,8 @@ def plot_viewcount_distributions(num_days: int = 5) -> None:
 
     for idx in indices:
         date, videos = yt_days[idx]
+        date_str = date.strftime("%Y%m%d")
+
         views = get_youtube_view_counts_for_day(videos)
         if not views:
             continue
@@ -221,7 +241,7 @@ def plot_viewcount_distributions(num_days: int = 5) -> None:
         plt.title(f"YouTube view distribution (linear) – {date}")
         plt.tight_layout()
         out_path = os.path.join(
-            PLOTS_DIR, f"s3a_views_rank_linear_{date}.png"
+            PLOTS_DIR, f"s3a_views_rank_linear_{date_str}.png"
         )
         plt.savefig(out_path, dpi=150)
         plt.close()
@@ -234,7 +254,7 @@ def plot_viewcount_distributions(num_days: int = 5) -> None:
         plt.title(f"YouTube view distribution (log-log) – {date}")
         plt.tight_layout()
         out_path = os.path.join(
-            PLOTS_DIR, f"s3a_views_rank_loglog_{date}.png"
+            PLOTS_DIR, f"s3a_views_rank_loglog_{date_str}.png"
         )
         plt.savefig(out_path, dpi=150)
         plt.close()
@@ -349,6 +369,9 @@ def compare_spotify_youtube_rankings(num_days: int = 5) -> None:
     """
     ensure_dir(PLOTS_DIR)
 
+    # clear old 3d plots so they don't multiply
+    clear_plots("s3d_")
+
     # Build mapping once (Spotify track ID -> YouTube video ID)
     mapping = _build_spotify_youtube_mapping()
     if not mapping:
@@ -371,6 +394,7 @@ def compare_spotify_youtube_rankings(num_days: int = 5) -> None:
     for date in selected_dates:
         yt_videos = yt_by_date[date]
         sp_tracks = sp_by_date[date]
+        date_str = date.strftime("%Y%m%d")
 
         # Build YouTube rank dict: video_id -> rank
         yt_sorted = sorted(
@@ -418,12 +442,11 @@ def compare_spotify_youtube_rankings(num_days: int = 5) -> None:
         plt.tight_layout()
 
         out_path = os.path.join(
-            PLOTS_DIR, f"s3d_rank_scatter_{date}.png"
+            PLOTS_DIR, f"s3d_rank_scatter_{date_str}.png"
         )
         plt.savefig(out_path, dpi=150)
         plt.close()
 
-        # Optionally, print a few example songs
         print("   Example matched songs (Spotify rank -> YouTube rank):")
         for (sp_r, yt_r, (name, artists)) in list(
             sorted(zip(xs, ys, names), key=lambda t: t[0])
