@@ -22,3 +22,4 @@ response = request.execute()
 
 for item in response["items"]:
     print(item["snippet"]["title"])
+
